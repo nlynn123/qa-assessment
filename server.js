@@ -4,12 +4,35 @@ const app = express()
 const {bots, playerRecord} = require('./data')
 const {shuffleArray} = require('./utils')
 
+// include and initialize the rollbar library with your access token
+var Rollbar = require('rollbar')
+var rollbar = new Rollbar({
+  accessToken: '9f73fa5355a246c0a300f86b024de47f',
+  captureUncaught: true,
+  captureUnhandledRejections: true,
+})
+
+// record a generic message and send it to Rollbar
+rollbar.log('Hello world!')
+
 app.use(express.json())
+app.get ('/', (req, res) => {
+    rollbar.log('html page loaded successfully!')
+    res.sendFile(path.join(__dirname, '/public/index.html'))
+})
+app.get('/styles', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/index.css'))
+  })
+  
+  app.get('/js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/index.js'))
+  })
 
 app.get('/api/robots', (req, res) => {
     try {
         res.status(200).send(botsArr)
     } catch (error) {
+        rollbar.error('The bots could not be retrieved!')
         console.log('ERROR GETTING BOTS', error)
         res.sendStatus(400)
     }
@@ -22,16 +45,13 @@ app.get('/api/robots/five', (req, res) => {
         let compDuo = shuffled.slice(6, 8)
         res.status(200).send({choices, compDuo})
     } catch (error) {
+        rollbar.error('Could not get five bots!')
         console.log('ERROR GETTING FIVE BOTS', error)
         res.sendStatus(400)
     }
 })
 
-app.use(express.static(path.join(__dirname, '../public')))
-app.get('/styles', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/index.css'))
-  })
-  app.use('/', express.static(path.join(__dirname, '...public/index.css')))
+
 
 app.post('/api/duel', (req, res) => {
     try {
@@ -68,6 +88,7 @@ app.get('/api/player', (req, res) => {
     try {
         res.status(200).send(playerRecord)
     } catch (error) {
+        rollbar.error('Could not get player stats')
         console.log('ERROR GETTING PLAYER STATS', error)
         res.sendStatus(400)
     }
